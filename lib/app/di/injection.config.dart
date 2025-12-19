@@ -25,6 +25,22 @@ import 'package:currency_converter/core/persistence/daos/rates_dao.dart'
     as _i602;
 import 'package:currency_converter/core/utils/clock.dart' as _i719;
 import 'package:currency_converter/core/utils/stale_policy.dart' as _i330;
+import 'package:currency_converter/features/currencies/data/datasources/currencies_local_data_source.dart'
+    as _i198;
+import 'package:currency_converter/features/currencies/data/datasources/currencies_remote_data_source.dart'
+    as _i497;
+import 'package:currency_converter/features/currencies/data/repositories/currencies_repository_impl.dart'
+    as _i228;
+import 'package:currency_converter/features/currencies/domain/repositories/currencies_repository.dart'
+    as _i24;
+import 'package:currency_converter/features/currencies/domain/usecases/refresh_currencies_if_stale.dart'
+    as _i642;
+import 'package:currency_converter/features/currencies/domain/usecases/set_currency_favorite.dart'
+    as _i808;
+import 'package:currency_converter/features/currencies/domain/usecases/watch_currencies.dart'
+    as _i289;
+import 'package:currency_converter/features/currencies/presentation/bloc/currencies_bloc.dart'
+    as _i67;
 import 'package:dio/dio.dart' as _i361;
 import 'package:get_it/get_it.dart' as _i174;
 import 'package:injectable/injectable.dart' as _i526;
@@ -51,14 +67,49 @@ extension GetItInjectableX on _i174.GetIt {
     gh.lazySingleton<_i447.CurrenciesDao>(
       () => _i447.CurrenciesDao(gh<_i658.AppDatabase>()),
     );
+    gh.lazySingleton<_i497.CurrenciesRemoteDataSource>(
+      () => _i497.CurrenciesRemoteDataSourceImpl(gh<_i361.Dio>()),
+    );
     gh.lazySingleton<_i716.ConnectivityService>(
       () => _i716.ConnectivityService(gh<_i895.Connectivity>()),
     );
     gh.lazySingleton<_i330.StalePolicy>(
       () => _i330.StalePolicy(gh<_i719.Clock>()),
     );
+    gh.lazySingleton<_i198.CurrenciesLocalDataSource>(
+      () => _i198.CurrenciesLocalDataSource(
+        gh<_i447.CurrenciesDao>(),
+        gh<_i357.FavoritesDao>(),
+        gh<_i719.Clock>(),
+      ),
+    );
     gh.factory<_i689.ConnectivityCubit>(
       () => _i689.ConnectivityCubit(gh<_i716.ConnectivityService>()),
+    );
+    gh.lazySingleton<_i24.CurrenciesRepository>(
+      () => _i228.CurrenciesRepositoryImpl(
+        gh<_i497.CurrenciesRemoteDataSource>(),
+        gh<_i198.CurrenciesLocalDataSource>(),
+        gh<_i716.ConnectivityService>(),
+        gh<_i330.StalePolicy>(),
+        gh<_i719.Clock>(),
+      ),
+    );
+    gh.factory<_i289.WatchCurrencies>(
+      () => _i289.WatchCurrencies(gh<_i24.CurrenciesRepository>()),
+    );
+    gh.factory<_i808.SetCurrencyFavorite>(
+      () => _i808.SetCurrencyFavorite(gh<_i24.CurrenciesRepository>()),
+    );
+    gh.factory<_i642.RefreshCurrenciesIfStale>(
+      () => _i642.RefreshCurrenciesIfStale(gh<_i24.CurrenciesRepository>()),
+    );
+    gh.factory<_i67.CurrenciesBloc>(
+      () => _i67.CurrenciesBloc(
+        gh<_i289.WatchCurrencies>(),
+        gh<_i642.RefreshCurrenciesIfStale>(),
+        gh<_i808.SetCurrencyFavorite>(),
+      ),
     );
     return this;
   }
