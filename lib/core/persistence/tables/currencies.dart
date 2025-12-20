@@ -8,5 +8,3 @@ class Currencies extends Table {
   @override
   Set<Column<Object>> get primaryKey => {code};
 }
-
-

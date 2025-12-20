@@ -19,19 +19,6 @@ abstract class RegisterModule {
         sendTimeout: const Duration(seconds: 15),
       ),
     );
-    dio.interceptors.add(
-      InterceptorsWrapper(
-        onRequest: (options, handler) {
-          final apiKey = env.apiKey;
-          if (apiKey != null && apiKey.isNotEmpty) {
-            options.queryParameters.putIfAbsent('apiKey', () => apiKey);
-          }
-          handler.next(options);
-        },
-      ),
-    );
     return dio;
   }
 }
-
-

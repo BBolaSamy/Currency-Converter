@@ -8,7 +8,8 @@ part 'favorites_dao.g.dart';
 
 @DriftAccessor(tables: [Favorites])
 @lazySingleton
-class FavoritesDao extends DatabaseAccessor<AppDatabase> with _$FavoritesDaoMixin {
+class FavoritesDao extends DatabaseAccessor<AppDatabase>
+    with _$FavoritesDaoMixin {
   FavoritesDao(super.db);
 
   Stream<List<Favorite>> watchAll() => select(favorites).watch();
@@ -31,10 +32,9 @@ class FavoritesDao extends DatabaseAccessor<AppDatabase> with _$FavoritesDaoMixi
         ),
       );
     } else {
-      await (delete(favorites)..where((t) => t.currencyCode.equals(currencyCode)))
-          .go();
+      await (delete(
+        favorites,
+      )..where((t) => t.currencyCode.equals(currencyCode))).go();
     }
   }
 }
-
-

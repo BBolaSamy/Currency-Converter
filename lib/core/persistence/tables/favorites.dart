@@ -7,5 +7,3 @@ class Favorites extends Table {
   @override
   Set<Column<Object>> get primaryKey => {currencyCode};
 }
-
-

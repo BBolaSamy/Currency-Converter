@@ -4,5 +4,3 @@ import 'package:injectable/injectable.dart';
 class Clock {
   DateTime nowUtc() => DateTime.now().toUtc();
 }
-
-

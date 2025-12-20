@@ -26,5 +26,3 @@ class ConnectivityCubit extends Cubit<ConnectivityStatus> {
     return super.close();
   }
 }
-
-

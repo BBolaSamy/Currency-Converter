@@ -36,5 +36,3 @@ final class _CurrenciesItemsUpdated extends CurrenciesEvent {
   const _CurrenciesItemsUpdated(this.items);
   final List<CurrencyItem> items;
 }
-
-

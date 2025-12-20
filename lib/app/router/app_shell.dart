@@ -20,11 +20,7 @@ class _AppShellState extends State<AppShell> {
 
   @override
   Widget build(BuildContext context) {
-    final pages = const [
-      CurrenciesPage(),
-      ConverterPage(),
-      HistoricalPage(),
-    ];
+    final pages = const [CurrenciesPage(), ConverterPage(), HistoricalPage()];
 
     return Scaffold(
       body: Column(
@@ -56,10 +52,7 @@ class _AppShellState extends State<AppShell> {
             icon: Icon(Icons.list_alt),
             label: 'Currencies',
           ),
-          NavigationDestination(
-            icon: Icon(Icons.swap_horiz),
-            label: 'Convert',
-          ),
+          NavigationDestination(icon: Icon(Icons.swap_horiz), label: 'Convert'),
           NavigationDestination(
             icon: Icon(Icons.show_chart),
             label: 'Historical',
@@ -69,5 +62,3 @@ class _AppShellState extends State<AppShell> {
     );
   }
 }
-
-

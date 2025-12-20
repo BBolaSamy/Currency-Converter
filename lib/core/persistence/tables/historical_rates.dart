@@ -10,5 +10,3 @@ class HistoricalRates extends Table {
   @override
   Set<Column<Object>> get primaryKey => {fromCode, toCode, date};
 }
-
-

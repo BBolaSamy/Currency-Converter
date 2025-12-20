@@ -21,10 +21,8 @@ class ConnectivityService {
   }
 
   ConnectivityStatus _mapResult(List<ConnectivityResult> results) {
-    final isOffline = results.isEmpty ||
-        results.every((r) => r == ConnectivityResult.none);
+    final isOffline =
+        results.isEmpty || results.every((r) => r == ConnectivityResult.none);
     return isOffline ? ConnectivityStatus.offline : ConnectivityStatus.online;
   }
 }
-
-

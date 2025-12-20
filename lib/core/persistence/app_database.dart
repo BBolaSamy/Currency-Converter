@@ -17,17 +17,8 @@ import 'tables/latest_rates.dart';
 part 'app_database.g.dart';
 
 @DriftDatabase(
-  tables: [
-    Currencies,
-    Favorites,
-    LatestRates,
-    HistoricalRates,
-  ],
-  daos: [
-    CurrenciesDao,
-    FavoritesDao,
-    RatesDao,
-  ],
+  tables: [Currencies, Favorites, LatestRates, HistoricalRates],
+  daos: [CurrenciesDao, FavoritesDao, RatesDao],
 )
 @lazySingleton
 class AppDatabase extends _$AppDatabase {
@@ -50,5 +41,3 @@ QueryExecutor _openConnection() {
     ),
   );
 }
-
-

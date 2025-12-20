@@ -43,9 +43,7 @@ class CurrenciesState {
       items: items ?? this.items,
       query: query ?? this.query,
       showFavoritesOnly: showFavoritesOnly ?? this.showFavoritesOnly,
-      errorMessage: errorMessage,
+      errorMessage: errorMessage ?? this.errorMessage,
     );
   }
 }
-
-

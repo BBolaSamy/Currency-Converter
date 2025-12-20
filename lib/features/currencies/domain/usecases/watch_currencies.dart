@@ -9,5 +9,3 @@ class WatchCurrencies {
 
   Stream<List<CurrencyItem>> call() => _repo.watchCurrencies();
 }
-
-

@@ -20,8 +20,8 @@ class OfflineBanner extends StatelessWidget {
                 child: Text(
                   'Offline mode: showing cached data',
                   style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                        color: scheme.onTertiaryContainer,
-                      ),
+                    color: scheme.onTertiaryContainer,
+                  ),
                 ),
               ),
             ],
@@ -31,5 +31,3 @@ class OfflineBanner extends StatelessWidget {
     );
   }
 }
-
-

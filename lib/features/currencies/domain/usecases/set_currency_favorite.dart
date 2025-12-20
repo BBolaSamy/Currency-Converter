@@ -11,8 +11,9 @@ class SetCurrencyFavorite {
     required String currencyCode,
     required bool isFavorite,
   }) {
-    return _repo.setFavorite(currencyCode: currencyCode, isFavorite: isFavorite);
+    return _repo.setFavorite(
+      currencyCode: currencyCode,
+      isFavorite: isFavorite,
+    );
   }
 }
-
-

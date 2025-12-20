@@ -17,21 +17,18 @@ class CurrenciesDao extends DatabaseAccessor<AppDatabase>
   Stream<List<Currency>> watchAll() => select(currencies).watch();
 
   Future<DateTime?> getLastUpdatedAtUtc() async {
-    final row = await (select(currencies)
-          ..orderBy([(t) => OrderingTerm.desc(t.updatedAtUtc)])
-          ..limit(1))
-        .getSingleOrNull();
+    final row =
+        await (select(currencies)
+              ..orderBy([(t) => OrderingTerm.desc(t.updatedAtUtc)])
+              ..limit(1))
+            .getSingleOrNull();
     return row?.updatedAtUtc;
   }
 
-  Future<void> replaceAll({
-    required List<CurrenciesCompanion> rows,
-  }) async {
+  Future<void> replaceAll({required List<CurrenciesCompanion> rows}) async {
     await transaction(() async {
       await delete(currencies).go();
       await batch((b) => b.insertAll(currencies, rows));
     });
   }
 }
-
-

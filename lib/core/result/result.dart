@@ -31,7 +31,9 @@ sealed class Failure {
 }
 
 final class NetworkFailure extends Failure {
-  const NetworkFailure({super.message = 'Network error. Check your connection.'});
+  const NetworkFailure({
+    super.message = 'Network error. Check your connection.',
+  });
 }
 
 final class ServerFailure extends Failure {
@@ -45,5 +47,3 @@ final class CacheFailure extends Failure {
 final class UnknownFailure extends Failure {
   const UnknownFailure({super.message = 'Something went wrong.'});
 }
-
-

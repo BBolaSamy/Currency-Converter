@@ -12,9 +12,7 @@ class CurrencyConverterApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MultiBlocProvider(
-      providers: [
-        BlocProvider(create: (_) => getIt<ConnectivityCubit>()),
-      ],
+      providers: [BlocProvider(create: (_) => getIt<ConnectivityCubit>())],
       child: MaterialApp(
         title: 'Currency Converter',
         theme: AppTheme.light(),
@@ -23,5 +21,3 @@ class CurrencyConverterApp extends StatelessWidget {
     );
   }
 }
-
-

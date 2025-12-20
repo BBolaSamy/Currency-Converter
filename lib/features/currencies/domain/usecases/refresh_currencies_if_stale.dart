@@ -9,5 +9,3 @@ class RefreshCurrenciesIfStale {
 
   Future<Result<void>> call() => _repo.refreshCurrenciesIfStale();
 }
-
-

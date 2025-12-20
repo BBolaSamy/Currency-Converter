@@ -12,5 +12,3 @@ abstract class CurrenciesRepository {
     required bool isFavorite,
   });
 }
-
-

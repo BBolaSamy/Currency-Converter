@@ -8,6 +8,7 @@ import '../../../../core/result/result.dart';
 import '../../../../core/utils/clock.dart';
 import '../../../../core/utils/stale_policy.dart';
 import '../../../../core/persistence/app_database.dart' as db;
+import '../../../../core/domain/entities/currency_entity.dart';
 import '../../domain/entities/currency.dart';
 import '../../domain/repositories/currencies_repository.dart';
 import '../datasources/currencies_local_data_source.dart';
@@ -33,35 +34,39 @@ class CurrenciesRepositoryImpl implements CurrenciesRepository {
 
   @override
   Stream<List<CurrencyItem>> watchCurrencies() {
-    return Rx.combineLatest2<List<db.Currency>, List<db.Favorite>, List<CurrencyItem>>(
-      _local.watchCurrenciesRows(),
-      _local.watchFavoritesRows(),
-      (currencies, favorites) {
-        final favSet = favorites.map((e) => e.currencyCode).toSet();
-        final items = currencies
-            .map(
-              (c) => CurrencyItem(
-                currency: CurrencyEntity(code: c.code, name: c.name),
-                isFavorite: favSet.contains(c.code),
-              ),
-            )
-            .toList();
-        // Favorites first, then alphabetical
-        items.sort((a, b) {
-          final fav = (b.isFavorite ? 1 : 0) - (a.isFavorite ? 1 : 0);
-          if (fav != 0) return fav;
-          return a.currency.code.compareTo(b.currency.code);
-        });
-        return items;
-      },
-    );
+    return Rx.combineLatest2<
+      List<db.Currency>,
+      List<db.Favorite>,
+      List<CurrencyItem>
+    >(_local.watchCurrenciesRows(), _local.watchFavoritesRows(), (
+      currencies,
+      favorites,
+    ) {
+      final favSet = favorites.map((e) => e.currencyCode).toSet();
+      final items = currencies
+          .map(
+            (c) => CurrencyItem(
+              currency: CurrencyEntity(code: c.code, name: c.name),
+              isFavorite: favSet.contains(c.code),
+            ),
+          )
+          .toList();
+      // Favorites first, then alphabetical
+      items.sort((a, b) {
+        final fav = (b.isFavorite ? 1 : 0) - (a.isFavorite ? 1 : 0);
+        if (fav != 0) return fav;
+        return a.currency.code.compareTo(b.currency.code);
+      });
+      return items;
+    });
   }
 
   @override
   Future<Result<void>> refreshCurrenciesIfStale() async {
     try {
       final lastUpdated = await _local.getCurrenciesUpdatedAtUtc();
-      final isStale = lastUpdated == null ||
+      final isStale =
+          lastUpdated == null ||
           _stalePolicy.isStale(fetchedAtUtc: lastUpdated, maxAge: _maxAge);
       if (!isStale) return const Success(null);
 
@@ -95,12 +100,13 @@ class CurrenciesRepositoryImpl implements CurrenciesRepository {
     required bool isFavorite,
   }) async {
     try {
-      await _local.setFavorite(currencyCode: currencyCode, isFavorite: isFavorite);
+      await _local.setFavorite(
+        currencyCode: currencyCode,
+        isFavorite: isFavorite,
+      );
       return const Success(null);
     } catch (e, st) {
       return FailureResult(ErrorMapper.mapToFailure(e, st));
     }
   }
 }
-
-

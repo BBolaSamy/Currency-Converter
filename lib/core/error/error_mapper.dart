@@ -26,5 +26,3 @@ sealed class ErrorMapper {
     }
   }
 }
-
-

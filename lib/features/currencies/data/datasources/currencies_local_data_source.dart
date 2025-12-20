@@ -21,22 +21,19 @@ class CurrenciesLocalDataSource {
 
   Stream<List<db.Favorite>> watchFavoritesRows() => _favoritesDao.watchAll();
 
-  Future<DateTime?> getCurrenciesUpdatedAtUtc() => _currenciesDao.getLastUpdatedAtUtc();
+  Future<DateTime?> getCurrenciesUpdatedAtUtc() =>
+      _currenciesDao.getLastUpdatedAtUtc();
 
   Future<void> replaceCurrencies({
     required List<db.CurrenciesCompanion> rows,
-  }) =>
-      _currenciesDao.replaceAll(rows: rows);
+  }) => _currenciesDao.replaceAll(rows: rows);
 
   Future<void> setFavorite({
     required String currencyCode,
     required bool isFavorite,
-  }) =>
-      _favoritesDao.setFavorite(
-        currencyCode: currencyCode,
-        isFavorite: isFavorite,
-        nowUtc: _clock.nowUtc(),
-      );
+  }) => _favoritesDao.setFavorite(
+    currencyCode: currencyCode,
+    isFavorite: isFavorite,
+    nowUtc: _clock.nowUtc(),
+  );
 }
-
-

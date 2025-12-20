@@ -14,11 +14,8 @@ part 'currencies_state.dart';
 
 @injectable
 class CurrenciesBloc extends Bloc<CurrenciesEvent, CurrenciesState> {
-  CurrenciesBloc(
-    this._watch,
-    this._refreshIfStale,
-    this._setFavorite,
-  ) : super(const CurrenciesState()) {
+  CurrenciesBloc(this._watch, this._refreshIfStale, this._setFavorite)
+    : super(const CurrenciesState()) {
     on<CurrenciesStarted>(_onStarted);
     on<CurrenciesSearchChanged>(_onSearchChanged);
     on<CurrenciesFavoritesFilterChanged>(_onFavoritesFilterChanged);
@@ -47,10 +44,12 @@ class CurrenciesBloc extends Bloc<CurrenciesEvent, CurrenciesState> {
     // immediate stale-check refresh in background
     final res = await _refreshIfStale();
     if (res is FailureResult<void>) {
-      emit(state.copyWith(
-        status: CurrenciesStatus.error,
-        errorMessage: res.failure.message,
-      ));
+      emit(
+        state.copyWith(
+          status: CurrenciesStatus.error,
+          errorMessage: res.failure.message,
+        ),
+      );
       return;
     }
   }
@@ -85,10 +84,12 @@ class CurrenciesBloc extends Bloc<CurrenciesEvent, CurrenciesState> {
   ) async {
     final res = await _refreshIfStale();
     if (res is FailureResult<void>) {
-      emit(state.copyWith(
-        status: CurrenciesStatus.error,
-        errorMessage: res.failure.message,
-      ));
+      emit(
+        state.copyWith(
+          status: CurrenciesStatus.error,
+          errorMessage: res.failure.message,
+        ),
+      );
     }
   }
 
@@ -96,11 +97,15 @@ class CurrenciesBloc extends Bloc<CurrenciesEvent, CurrenciesState> {
     _CurrenciesItemsUpdated event,
     Emitter<CurrenciesState> emit,
   ) {
-    // If we were loading, switch to content once we have anything (including empty list).
-    final status = state.status == CurrenciesStatus.loading
-        ? CurrenciesStatus.content
-        : state.status;
-    emit(state.copyWith(status: status, items: event.items));
+    // Stream is the source of truth. Once it emits, prefer showing content (even if empty),
+    // and clear any blocking error UI (offline-first).
+    emit(
+      state.copyWith(
+        status: CurrenciesStatus.content,
+        items: event.items,
+        errorMessage: null,
+      ),
+    );
   }
 
   @override
@@ -109,5 +114,3 @@ class CurrenciesBloc extends Bloc<CurrenciesEvent, CurrenciesState> {
     return super.close();
   }
 }
-
-

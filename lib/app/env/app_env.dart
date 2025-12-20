@@ -3,10 +3,9 @@ import 'package:injectable/injectable.dart';
 
 @lazySingleton
 class AppEnv {
-  String get baseUrl =>
-      (dotenv.env['BASE_URL']?.trim().isNotEmpty ?? false)
-          ? dotenv.env['BASE_URL']!.trim()
-          : 'https://free.currencyconverterapi.com/api/v7/';
+  String get baseUrl => (dotenv.env['BASE_URL']?.trim().isNotEmpty ?? false)
+      ? dotenv.env['BASE_URL']!.trim()
+      : 'https://v6.exchangerate-api.com/v6/';
 
   String? get apiKey {
     final key = dotenv.env['API_KEY']?.trim();
@@ -14,5 +13,3 @@ class AppEnv {
     return key;
   }
 }
-
-

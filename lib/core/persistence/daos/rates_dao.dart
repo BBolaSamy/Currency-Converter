@@ -12,10 +12,7 @@ part 'rates_dao.g.dart';
 class RatesDao extends DatabaseAccessor<AppDatabase> with _$RatesDaoMixin {
   RatesDao(super.db);
 
-  Future<LatestRate?> getLatest({
-    required String from,
-    required String to,
-  }) {
+  Future<LatestRate?> getLatest({required String from, required String to}) {
     return (select(latestRates)
           ..where((t) => t.fromCode.equals(from) & t.toCode.equals(to)))
         .getSingleOrNull();
@@ -35,6 +32,14 @@ class RatesDao extends DatabaseAccessor<AppDatabase> with _$RatesDaoMixin {
         fetchedAtUtc: Value(fetchedAtUtc),
       ),
     );
+  }
+
+  Future<void> upsertLatestMany({
+    required List<LatestRatesCompanion> rows,
+  }) async {
+    await batch((b) {
+      b.insertAllOnConflictUpdate(latestRates, rows);
+    });
   }
 
   Future<DateTime?> getLatestFetchedAtUtc({
@@ -59,17 +64,16 @@ class RatesDao extends DatabaseAccessor<AppDatabase> with _$RatesDaoMixin {
     required String from,
     required String to,
   }) async {
-    final row = await (select(historicalRates)
-          ..where((t) => t.fromCode.equals(from) & t.toCode.equals(to))
-          ..orderBy([(t) => OrderingTerm.desc(t.fetchedAtUtc)])
-          ..limit(1))
-        .getSingleOrNull();
+    final row =
+        await (select(historicalRates)
+              ..where((t) => t.fromCode.equals(from) & t.toCode.equals(to))
+              ..orderBy([(t) => OrderingTerm.desc(t.fetchedAtUtc)])
+              ..limit(1))
+            .getSingleOrNull();
     return row?.fetchedAtUtc;
   }
 
   Future<void> upsertHistoricalMany({
-    required String from,
-    required String to,
     required List<HistoricalRatesCompanion> rows,
   }) async {
     await batch((b) {
@@ -77,5 +81,3 @@ class RatesDao extends DatabaseAccessor<AppDatabase> with _$RatesDaoMixin {
     });
   }
 }
-
-

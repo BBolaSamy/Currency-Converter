@@ -9,13 +9,8 @@ class StalePolicy {
   final Clock _clock;
 
   /// True if [fetchedAtUtc] is older than [maxAge].
-  bool isStale({
-    required DateTime fetchedAtUtc,
-    required Duration maxAge,
-  }) {
+  bool isStale({required DateTime fetchedAtUtc, required Duration maxAge}) {
     final age = _clock.nowUtc().difference(fetchedAtUtc);
     return age > maxAge;
   }
 }
-
-
