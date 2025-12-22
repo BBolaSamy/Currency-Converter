@@ -94,4 +94,8 @@ class RatesLocalDataSource {
         .toList(growable: false);
     return _dao.upsertHistoricalMany(rows: rows);
   }
+
+  Future<int> deleteHistoricalOlderThan({required String cutoffDate}) {
+    return _dao.deleteHistoricalOlderThan(cutoffDate: cutoffDate);
+  }
 }

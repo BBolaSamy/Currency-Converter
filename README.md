@@ -113,6 +113,43 @@ The app uses **Clean Architecture** + **BLoC** because:
 - When offline, an **Offline mode banner** is shown and the app keeps working from cache.
 - If cached data is stale (**> 12 hours**), the app performs a **background refresh** when online.
 
+## Local persistence (banking-style hygiene)
+
+- **Stored data (non-sensitive only)**:
+  - Currency catalog (code + name)
+  - Favorites (currency codes)
+  - Latest + historical exchange rates (cache)
+- **No PII**:
+  - No user accounts, no names/emails/phone numbers, no identifiers, no payment data.
+
+### Data integrity (constraints)
+
+Drift tables enforce uniqueness using primary keys:
+
+- **Currencies**: `code` is the primary key (unique currency code)
+- **Favorites**: `currencyCode` is the primary key
+- **LatestRates**: `(fromCode, toCode)` is the composite primary key
+- **HistoricalRates**: `(fromCode, toCode, date)` is the composite primary key (pair+day unique)
+
+### Migrations strategy
+
+Database migrations are handled by Drift using:
+
+- `schemaVersion` + `MigrationStrategy` in `lib/core/persistence/app_database.dart`
+- Upgrade steps are explicit (e.g. creating indices without data loss)
+
+### Cache invalidation (retention)
+
+To keep local storage bounded, the app **purges historical rates older than 30 days** during refresh.
+
+### Optional encryption (if required)
+
+If you require at-rest encryption (e.g., compliance), you can switch the SQLite backend to **SQLCipher**
+while keeping the same table schema and repository/data-source design. Typical approaches:
+
+- Use a SQLCipher-enabled SQLite implementation for Flutter (SQLCipher build), or a Drift-compatible SQLCipher package.
+- Store the encryption key securely (platform keystore/keychain).
+
 ## Historical data
 
 The app fetches last 7 days by requesting the **date endpoint** (`/{YYYY-MM-DD}`) for each day (cached in Drift).  

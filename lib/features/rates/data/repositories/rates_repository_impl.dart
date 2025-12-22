@@ -32,6 +32,7 @@ class RatesRepositoryImpl implements RatesRepository {
   final StalePolicy _stalePolicy;
 
   static const _maxAge = Duration(hours: 12);
+  static const _historicalRetentionDays = 30;
 
   @override
   Future<Result<LatestRateQuote>> getLatestRate({
@@ -243,6 +244,13 @@ class RatesRepositoryImpl implements RatesRepository {
     final f = from.toUpperCase();
     final t = to.toUpperCase();
     final rng = Random();
+
+    // Cache invalidation (banking-style retention): keep only the last N days.
+    // Dates are stored as YYYY-MM-DD strings, so lexicographic comparisons work.
+    final cutoff = end.subtract(
+      const Duration(days: _historicalRetentionDays - 1),
+    );
+    await _local.deleteHistoricalOlderThan(cutoffDate: _fmtDate(cutoff));
 
     for (
       var d = DateTime.utc(start.year, start.month, start.day);

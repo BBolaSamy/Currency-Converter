@@ -25,7 +25,30 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
+
+  @override
+  MigrationStrategy get migration => MigrationStrategy(
+    onCreate: (m) async {
+      await m.createAll();
+      // Helpful for retention cleanups and range queries by date.
+      await customStatement(
+        'CREATE INDEX IF NOT EXISTS idx_historical_rates_date ON historical_rates(date);',
+      );
+    },
+    onUpgrade: (m, from, to) async {
+      // v2: introduce indices (no data loss).
+      if (from < 2) {
+        await customStatement(
+          'CREATE INDEX IF NOT EXISTS idx_historical_rates_date ON historical_rates(date);',
+        );
+      }
+    },
+    beforeOpen: (details) async {
+      // No foreign keys currently, but keep this enabled for future hardening.
+      await customStatement('PRAGMA foreign_keys = ON;');
+    },
+  );
 }
 
 QueryExecutor _openConnection() {
