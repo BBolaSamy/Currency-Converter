@@ -60,6 +60,14 @@ class RatesLocalDataSource {
     return _dao.getHistorical(from: from, to: to);
   }
 
+  Future<db.HistoricalRate?> getHistoricalByDate({
+    required String from,
+    required String to,
+    required String date,
+  }) {
+    return _dao.getHistoricalByDate(from: from, to: to, date: date);
+  }
+
   Future<DateTime?> getHistoricalFetchedAtUtc({
     required String from,
     required String to,

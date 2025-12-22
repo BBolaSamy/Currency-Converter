@@ -1,34 +1,42 @@
 import 'package:dio/dio.dart';
 import 'package:injectable/injectable.dart';
 
-import '../../../../app/env/app_env.dart';
-import '../models/exchangerate_latest_response.dart';
+import '../models/apilayer_api_error.dart';
+import '../models/apilayer_latest_response.dart';
 
 abstract class RatesRemoteDataSource {
-  Future<ExchangeRateLatestResponse> fetchLatestForBase({
-    required String base,
-  });
+  /// GET /latest?access_key=...
+  /// No extra params (defaults to base=EUR and returns full rates list).
+  Future<ApiLayerLatestResponse> fetchLatestDefault();
+
+  /// GET /{YYYY-MM-DD}?access_key=...
+  /// No extra params. Returns historical rates for that date (base=EUR).
+  Future<ApiLayerLatestResponse> fetchHistoricalOnDate({required String date});
 }
 
 @LazySingleton(as: RatesRemoteDataSource)
 class RatesRemoteDataSourceImpl implements RatesRemoteDataSource {
-  RatesRemoteDataSourceImpl(this._dio, this._env);
+  RatesRemoteDataSourceImpl(this._dio);
 
   final Dio _dio;
-  final AppEnv _env;
 
   @override
-  Future<ExchangeRateLatestResponse> fetchLatestForBase({
-    required String base,
-  }) async {
-    final key = _env.apiKey;
-    if (key == null || key.isEmpty) {
-      throw StateError('API_KEY is missing (set it in env)');
-    }
-    final b = base.trim().toUpperCase();
-    final res = await _dio.get<dynamic>('$key/latest/$b');
-    final parsed = ExchangeRateLatestResponse.tryParse(res.data);
-    if (parsed == null) throw StateError('Unexpected exchangerate-api response');
+  Future<ApiLayerLatestResponse> fetchLatestDefault() async {
+    final res = await _dio.get<dynamic>('latest');
+    final err = ApiLayerApiError.tryParse(res.data);
+    if (err != null) throw err;
+    final parsed = ApiLayerLatestResponse.tryParse(res.data);
+    if (parsed == null) throw StateError('Unexpected apilayer response');
+    return parsed;
+  }
+
+  @override
+  Future<ApiLayerLatestResponse> fetchHistoricalOnDate({required String date}) async {
+    final res = await _dio.get<dynamic>(date);
+    final err = ApiLayerApiError.tryParse(res.data);
+    if (err != null) throw err;
+    final parsed = ApiLayerLatestResponse.tryParse(res.data);
+    if (parsed == null) throw StateError('Unexpected apilayer response');
     return parsed;
   }
 }

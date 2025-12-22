@@ -71,10 +71,10 @@ extension GetItInjectableX on _i174.GetIt {
   }) {
     final gh = _i526.GetItHelper(this, environment, environmentFilter);
     final registerModule = _$RegisterModule();
-    gh.lazySingleton<_i895.Connectivity>(() => registerModule.connectivity);
-    gh.lazySingleton<_i153.AppEnv>(() => _i153.AppEnv());
     gh.lazySingleton<_i719.Clock>(() => _i719.Clock());
     gh.lazySingleton<_i658.AppDatabase>(() => _i658.AppDatabase());
+    gh.lazySingleton<_i895.Connectivity>(() => registerModule.connectivity);
+    gh.lazySingleton<_i153.AppEnv>(() => _i153.AppEnv());
     gh.lazySingleton<_i361.Dio>(() => registerModule.dio(gh<_i153.AppEnv>()));
     gh.lazySingleton<_i357.FavoritesDao>(
       () => _i357.FavoritesDao(gh<_i658.AppDatabase>()),
@@ -85,6 +85,12 @@ extension GetItInjectableX on _i174.GetIt {
     gh.lazySingleton<_i447.CurrenciesDao>(
       () => _i447.CurrenciesDao(gh<_i658.AppDatabase>()),
     );
+    gh.lazySingleton<_i497.CurrenciesRemoteDataSource>(
+      () => _i497.CurrenciesRemoteDataSourceImpl(gh<_i361.Dio>()),
+    );
+    gh.lazySingleton<_i827.RatesRemoteDataSource>(
+      () => _i827.RatesRemoteDataSourceImpl(gh<_i361.Dio>()),
+    );
     gh.lazySingleton<_i716.ConnectivityService>(
       () => _i716.ConnectivityService(gh<_i895.Connectivity>()),
     );
@@ -93,16 +99,6 @@ extension GetItInjectableX on _i174.GetIt {
     );
     gh.lazySingleton<_i1039.RatesLocalDataSource>(
       () => _i1039.RatesLocalDataSource(gh<_i602.RatesDao>()),
-    );
-    gh.lazySingleton<_i497.CurrenciesRemoteDataSource>(
-      () => _i497.CurrenciesRemoteDataSourceImpl(
-        gh<_i361.Dio>(),
-        gh<_i153.AppEnv>(),
-      ),
-    );
-    gh.lazySingleton<_i827.RatesRemoteDataSource>(
-      () =>
-          _i827.RatesRemoteDataSourceImpl(gh<_i361.Dio>(), gh<_i153.AppEnv>()),
     );
     gh.lazySingleton<_i198.CurrenciesLocalDataSource>(
       () => _i198.CurrenciesLocalDataSource(

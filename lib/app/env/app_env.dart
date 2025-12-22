@@ -5,7 +5,7 @@ import 'package:injectable/injectable.dart';
 class AppEnv {
   String get baseUrl => (dotenv.env['BASE_URL']?.trim().isNotEmpty ?? false)
       ? dotenv.env['BASE_URL']!.trim()
-      : 'https://v6.exchangerate-api.com/v6/';
+      : 'https://api.exchangeratesapi.io/v1/';
 
   String? get apiKey {
     final key = dotenv.env['API_KEY']?.trim();

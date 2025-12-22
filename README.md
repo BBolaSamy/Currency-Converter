@@ -4,7 +4,8 @@ Currency Converter app built with **Clean Architecture** (data/domain/presentati
 
 ## APIs
 
-- **Rates API**: `exchangerate-api.com` v6 (base URL configurable)
+- **Rates API**: APILayer **Exchangerates API** (exchangeratesapi.io)  
+  Docs: `https://docs.apilayer.com/exchangeratesapi/docs/api-documentation`
 - **Flags**: `flagcdn.com` (country flags by ISO code)
 
 ## Setup
@@ -39,6 +40,11 @@ Cross-cutting code lives in `lib/core/` (Result/Failure, error mapping, DB, netw
 - App always renders from **local Drift cache** first.
 - When offline, an **Offline mode banner** is shown and the app keeps working from cache.
 - If cached data is stale (**> 12 hours**), the app performs a **background refresh** when online.
+
+## Historical data
+
+The app fetches last 7 days by requesting the **date endpoint** (`/{YYYY-MM-DD}`) for each day (cached in Drift).  
+Example: `https://api.exchangeratesapi.io/v1/2023-11-15?access_key=...`
 
 ## Database (Drift / SQLite) justification
 

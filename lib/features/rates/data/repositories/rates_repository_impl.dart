@@ -1,5 +1,8 @@
 import 'dart:async';
 
+import 'dart:math';
+
+import 'package:dio/dio.dart';
 import 'package:injectable/injectable.dart';
 
 import '../../../../core/error/error_mapper.dart';
@@ -12,7 +15,7 @@ import '../../domain/entities/rate_point.dart';
 import '../../domain/repositories/rates_repository.dart';
 import '../datasources/rates_local_data_source.dart';
 import '../datasources/rates_remote_data_source.dart';
-import '../../../../core/persistence/app_database.dart' as db;
+import '../models/apilayer_latest_response.dart';
 
 @LazySingleton(as: RatesRepository)
 class RatesRepositoryImpl implements RatesRepository {
@@ -29,7 +32,6 @@ class RatesRepositoryImpl implements RatesRepository {
   final StalePolicy _stalePolicy;
 
   static const _maxAge = Duration(hours: 12);
-  static const _snapshotBase = 'USD';
 
   @override
   Future<Result<LatestRateQuote>> getLatestRate({
@@ -41,11 +43,8 @@ class RatesRepositoryImpl implements RatesRepository {
       final f = from.toUpperCase();
       final t = to.toUpperCase();
 
-      final cachedRate = await _getCrossRateFromCache(from: f, to: t);
-      final fetchedAt = await _local.getLatestFetchedAtUtc(
-        from: _snapshotBase,
-        to: _snapshotBase,
-      );
+      final cached = await _local.getLatest(from: f, to: t);
+      final fetchedAt = cached?.fetchedAtUtc;
       final stale = fetchedAt == null ||
           _stalePolicy.isStale(fetchedAtUtc: fetchedAt, maxAge: _maxAge);
 
@@ -53,30 +52,27 @@ class RatesRepositoryImpl implements RatesRepository {
       final canFetch = status == ConnectivityStatus.online;
 
       if (forceRefresh && canFetch) {
-        await _refreshSnapshotBaseInForeground();
-        final rate = await _getCrossRateFromCache(from: f, to: t);
-        if (rate == null) return const FailureResult(CacheFailure());
-        return Success(
-          LatestRateQuote(
-            from: f,
-            to: t,
-            rate: rate,
-            fetchedAtUtc: DateTime.now().toUtc(),
-          ),
+        final quote = await _fetchLatestQuote(from: f, to: t);
+        await _local.upsertLatest(
+          from: f,
+          to: t,
+          rate: quote.rate,
+          fetchedAtUtc: quote.fetchedAtUtc,
         );
+        return Success(quote);
       }
 
       // Offline-first: if we have cache, return it even if stale.
-      if (cachedRate != null) {
+      if (cached != null) {
         // Background refresh if stale and online (don't block the UI).
         if (stale && canFetch) {
-          unawaited(_refreshSnapshotBaseInBackground());
+          unawaited(_refreshLatestInBackground(from: f, to: t));
         }
         return Success(
           LatestRateQuote(
             from: f,
             to: t,
-            rate: cachedRate,
+            rate: cached.rate,
             fetchedAtUtc: fetchedAt ?? DateTime.now().toUtc(),
           ),
         );
@@ -85,25 +81,31 @@ class RatesRepositoryImpl implements RatesRepository {
       // No cache: fetch if possible.
       if (!canFetch) return const FailureResult(CacheFailure());
 
-      await _refreshSnapshotBaseInForeground();
-      final rate = await _getCrossRateFromCache(from: f, to: t);
-      if (rate == null) return const FailureResult(CacheFailure());
-      return Success(
-        LatestRateQuote(
-          from: f,
-          to: t,
-          rate: rate,
-          fetchedAtUtc: DateTime.now().toUtc(),
-        ),
+      final quote = await _fetchLatestQuote(from: f, to: t);
+      await _local.upsertLatest(
+        from: f,
+        to: t,
+        rate: quote.rate,
+        fetchedAtUtc: quote.fetchedAtUtc,
       );
+      return Success(quote);
     } catch (e, st) {
       return FailureResult(ErrorMapper.mapToFailure(e, st));
     }
   }
 
-  Future<void> _refreshSnapshotBaseInBackground() async {
+  Future<void> _refreshLatestInBackground({
+    required String from,
+    required String to,
+  }) async {
     try {
-      await _refreshSnapshotBaseInForeground();
+      final quote = await _fetchLatestQuote(from: from, to: to);
+      await _local.upsertLatest(
+        from: from,
+        to: to,
+        rate: quote.rate,
+        fetchedAtUtc: quote.fetchedAtUtc,
+      );
     } catch (_) {
       // swallow
     }
@@ -124,12 +126,8 @@ class RatesRepositoryImpl implements RatesRepository {
       final startStr = _fmtDate(start);
       final endStr = _fmtDate(end);
 
-      final usdToFrom = await _local.getHistorical(from: _snapshotBase, to: f);
-      final usdToTo = await _local.getHistorical(from: _snapshotBase, to: t);
-      final lastFetchedAt = await _local.getHistoricalFetchedAtUtc(
-        from: _snapshotBase,
-        to: _snapshotBase,
-      );
+      final cachedRows = await _local.getHistorical(from: f, to: t);
+      final lastFetchedAt = await _local.getHistoricalFetchedAtUtc(from: f, to: t);
       final stale =
           lastFetchedAt == null ||
           _stalePolicy.isStale(fetchedAtUtc: lastFetchedAt, maxAge: _maxAge);
@@ -137,34 +135,39 @@ class RatesRepositoryImpl implements RatesRepository {
       final status = await _connectivity.getCurrentStatus();
       final canFetch = status == ConnectivityStatus.online;
 
-      final cachedPoints = _buildCrossHistory(
-        from: f,
-        to: t,
-        startDate: startStr,
-        endDate: endStr,
-        usdToFrom: usdToFrom,
-        usdToTo: usdToTo,
-      );
+      final cachedPoints = cachedRows
+          .where((r) => r.date.compareTo(startStr) >= 0 && r.date.compareTo(endStr) <= 0)
+          .map((r) => RatePoint(date: r.date, rate: r.rate))
+          .toList(growable: false);
 
       if (!forceRefresh && cachedPoints.isNotEmpty) {
         if (stale && canFetch) {
-          unawaited(_refreshSnapshotBaseInBackground());
+          unawaited(
+            _refreshHistoryByDateRangeInBackground(
+              from: f,
+              to: t,
+              start: start,
+              end: end,
+              force: false,
+            ),
+          );
         }
         return Success(cachedPoints);
       }
 
       if (forceRefresh && canFetch) {
-        await _refreshSnapshotBaseInForeground();
-        final refreshedFrom = await _local.getHistorical(from: _snapshotBase, to: f);
-        final refreshedTo = await _local.getHistorical(from: _snapshotBase, to: t);
-        final points = _buildCrossHistory(
+        await _refreshHistoryByDateRangeInForeground(
           from: f,
           to: t,
-          startDate: startStr,
-          endDate: endStr,
-          usdToFrom: refreshedFrom,
-          usdToTo: refreshedTo,
+          start: start,
+          end: end,
+          force: true,
         );
+        final refreshed = await _local.getHistorical(from: f, to: t);
+        final points = refreshed
+            .where((r) => r.date.compareTo(startStr) >= 0 && r.date.compareTo(endStr) <= 0)
+            .map((r) => RatePoint(date: r.date, rate: r.rate))
+            .toList(growable: false);
         if (points.isEmpty) return const FailureResult(CacheFailure());
         return Success(points);
       }
@@ -174,17 +177,18 @@ class RatesRepositoryImpl implements RatesRepository {
         return const FailureResult(CacheFailure());
       }
 
-      await _refreshSnapshotBaseInForeground();
-      final refreshedFrom = await _local.getHistorical(from: _snapshotBase, to: f);
-      final refreshedTo = await _local.getHistorical(from: _snapshotBase, to: t);
-      final points = _buildCrossHistory(
+      await _refreshHistoryByDateRangeInForeground(
         from: f,
         to: t,
-        startDate: startStr,
-        endDate: endStr,
-        usdToFrom: refreshedFrom,
-        usdToTo: refreshedTo,
+        start: start,
+        end: end,
+        force: false,
       );
+      final refreshed = await _local.getHistorical(from: f, to: t);
+      final points = refreshed
+          .where((r) => r.date.compareTo(startStr) >= 0 && r.date.compareTo(endStr) <= 0)
+          .map((r) => RatePoint(date: r.date, rate: r.rate))
+          .toList(growable: false);
       if (points.isEmpty) return const FailureResult(CacheFailure());
       return Success(points);
     } catch (e, st) {
@@ -192,34 +196,120 @@ class RatesRepositoryImpl implements RatesRepository {
     }
   }
 
-  Future<void> _refreshSnapshotBaseInForeground() async {
-    final snapshot = await _remote.fetchLatestForBase(base: _snapshotBase);
-    final fetchedAtUtc = DateTime.fromMillisecondsSinceEpoch(
-      snapshot.timeLastUpdateUnix * 1000,
-      isUtc: true,
-    );
+  Future<void> _refreshHistoryByDateRangeInBackground({
+    required String from,
+    required String to,
+    required DateTime start,
+    required DateTime end,
+    required bool force,
+  }) async {
+    try {
+      await _refreshHistoryByDateRangeInForeground(
+        from: from,
+        to: to,
+        start: start,
+        end: end,
+        force: force,
+      );
+    } catch (_) {
+      // swallow
+    }
+  }
 
-    // Store a "marker" row for base->base so we can read fetchedAt as a global timestamp.
-    await _local.upsertLatest(
-      from: _snapshotBase,
-      to: _snapshotBase,
-      rate: 1.0,
-      fetchedAtUtc: fetchedAtUtc,
-    );
+  Future<void> _refreshHistoryByDateRangeInForeground({
+    required String from,
+    required String to,
+    required DateTime start,
+    required DateTime end,
+    required bool force,
+  }) async {
+    final fetchedAtUtc = DateTime.now().toUtc();
+    final f = from.toUpperCase();
+    final t = to.toUpperCase();
+    final rng = Random();
 
-    // Store USD->X latests and also today's historical snapshot.
-    final today = _fmtDate(DateTime.now().toUtc());
-    await _local.upsertLatestMany(
-      from: _snapshotBase,
-      rates: snapshot.conversionRates,
-      fetchedAtUtc: fetchedAtUtc,
-    );
-    await _local.upsertHistoricalDailySnapshot(
-      from: _snapshotBase,
-      date: today,
-      rates: snapshot.conversionRates,
-      fetchedAtUtc: fetchedAtUtc,
-    );
+    for (var d = DateTime.utc(start.year, start.month, start.day);
+        !d.isAfter(end);
+        d = d.add(const Duration(days: 1))) {
+      final dateStr = _fmtDate(d);
+      if (!force) {
+        final existing = await _local.getHistoricalByDate(
+          from: f,
+          to: t,
+          date: dateStr,
+        );
+        if (existing != null &&
+            !_stalePolicy.isStale(
+              fetchedAtUtc: existing.fetchedAtUtc,
+              maxAge: _maxAge,
+            )) {
+          continue; // cached + fresh, skip network
+        }
+      }
+
+      final res = await _fetchHistoricalOnDateWithRetry(
+        date: dateStr,
+        rng: rng,
+      );
+      if (res == null) {
+        // Rate-limited and couldn't recover in time; stop the burst.
+        break;
+      }
+      final base = res.base; // usually EUR
+
+      double baseTo(String code) {
+        final c = code.toUpperCase();
+        if (c == base) return 1.0;
+        final r = res.rates[c];
+        if (r == null) throw StateError('Missing rate for $c on $dateStr');
+        return r;
+      }
+
+      final rate = f == t ? 1.0 : (baseTo(t) / baseTo(f));
+      await _local.upsertHistoricalDailySnapshot(
+        from: f,
+        date: dateStr,
+        rates: {t: rate},
+        fetchedAtUtc: fetchedAtUtc,
+      );
+
+      // Small pacing delay to reduce chance of hitting 429 in bursts.
+      await Future<void>.delayed(const Duration(milliseconds: 250));
+    }
+  }
+
+  Future<ApiLayerLatestResponse?> _fetchHistoricalOnDateWithRetry({
+    required String date,
+    required Random rng,
+  }) async {
+    const maxAttempts = 5;
+    var attempt = 0;
+    var backoffMs = 500;
+
+    while (true) {
+      try {
+        return await _remote.fetchHistoricalOnDate(date: date);
+      } on DioException catch (e) {
+        final status = e.response?.statusCode;
+        if (status == 429 && attempt < maxAttempts) {
+          final jitter = rng.nextInt(250);
+          await Future<void>.delayed(Duration(milliseconds: backoffMs + jitter));
+          backoffMs *= 2;
+          attempt++;
+          continue;
+        }
+        if (status == 429) {
+          return null;
+        }
+        rethrow;
+      } catch (_) {
+        // For non-Dio failures, don't loop forever.
+        if (attempt >= maxAttempts) return null;
+        await Future<void>.delayed(Duration(milliseconds: backoffMs));
+        backoffMs *= 2;
+        attempt++;
+      }
+    }
   }
 
   String _fmtDate(DateTime dtUtc) {
@@ -227,50 +317,27 @@ class RatesRepositoryImpl implements RatesRepository {
     return '${dtUtc.year}-${two(dtUtc.month)}-${two(dtUtc.day)}';
   }
 
-  Future<double?> _getCrossRateFromCache({
+  Future<LatestRateQuote> _fetchLatestQuote({
     required String from,
     required String to,
   }) async {
-    if (from == to) return 1.0;
-    if (from == _snapshotBase) {
-      final usdToTo = await _local.getLatest(from: _snapshotBase, to: to);
-      return usdToTo?.rate;
-    }
-    if (to == _snapshotBase) {
-      final usdToFrom = await _local.getLatest(from: _snapshotBase, to: from);
-      final r = usdToFrom?.rate;
-      if (r == null || r == 0) return null;
-      return 1.0 / r;
+    final res = await _remote.fetchLatestDefault();
+    final base = res.base; // usually EUR
+    final f = from.toUpperCase();
+    final t = to.toUpperCase();
+
+    double baseTo(String code) {
+      final c = code.toUpperCase();
+      if (c == base) return 1.0;
+      final r = res.rates[c];
+      if (r == null) throw StateError('Missing rate for $c');
+      return r;
     }
 
-    final usdToFrom = await _local.getLatest(from: _snapshotBase, to: from);
-    final usdToTo = await _local.getLatest(from: _snapshotBase, to: to);
-    final a = usdToFrom?.rate;
-    final b = usdToTo?.rate;
-    if (a == null || b == null || a == 0) return null;
-    return b / a;
-  }
-
-  List<RatePoint> _buildCrossHistory({
-    required String from,
-    required String to,
-    required String startDate,
-    required String endDate,
-    required List<db.HistoricalRate> usdToFrom,
-    required List<db.HistoricalRate> usdToTo,
-  }) {
-    final mapFrom = {for (final r in usdToFrom) r.date: r.rate};
-    final mapTo = {for (final r in usdToTo) r.date: r.rate};
-
-    final points = <RatePoint>[];
-    for (final d in mapTo.keys) {
-      if (d.compareTo(startDate) < 0 || d.compareTo(endDate) > 0) continue;
-      final a = mapFrom[d];
-      final b = mapTo[d];
-      if (a == null || b == null || a == 0) continue;
-      points.add(RatePoint(date: d, rate: b / a));
-    }
-    points.sort((x, y) => x.date.compareTo(y.date));
-    return points;
+    final rate = f == t ? 1.0 : (baseTo(t) / baseTo(f));
+    final fetchedAtUtc = res.timestamp != null
+        ? DateTime.fromMillisecondsSinceEpoch(res.timestamp! * 1000, isUtc: true)
+        : DateTime.now().toUtc();
+    return LatestRateQuote(from: f, to: t, rate: rate, fetchedAtUtc: fetchedAtUtc);
   }
 }

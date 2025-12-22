@@ -60,6 +60,21 @@ class RatesDao extends DatabaseAccessor<AppDatabase> with _$RatesDaoMixin {
         .get();
   }
 
+  Future<HistoricalRate?> getHistoricalByDate({
+    required String from,
+    required String to,
+    required String date,
+  }) {
+    return (select(historicalRates)
+          ..where(
+            (t) =>
+                t.fromCode.equals(from) &
+                t.toCode.equals(to) &
+                t.date.equals(date),
+          ))
+        .getSingleOrNull();
+  }
+
   Future<DateTime?> getHistoricalFetchedAtUtc({
     required String from,
     required String to,
