@@ -85,15 +85,15 @@ class _CurrenciesViewState extends State<_CurrenciesView> {
                             onPressed: () {
                               _searchController.clear();
                               context.read<CurrenciesBloc>().add(
-                                    const CurrenciesSearchChanged(''),
-                                  );
+                                const CurrenciesSearchChanged(''),
+                              );
                             },
                             icon: const Icon(Icons.close),
                           ),
                       ],
                       onChanged: (v) => context.read<CurrenciesBloc>().add(
-                            CurrenciesSearchChanged(v),
-                          ),
+                        CurrenciesSearchChanged(v),
+                      ),
                     ),
                     const SizedBox(height: 12),
                     SegmentedButton<bool>(
@@ -127,22 +127,24 @@ class _CurrenciesViewState extends State<_CurrenciesView> {
                   child: switch (state.status) {
                     CurrenciesStatus.loading => const _CurrenciesSkeleton(),
                     CurrenciesStatus.error => _ErrorState(
-                        message: state.errorMessage,
-                      ),
+                      message: state.errorMessage,
+                    ),
                     _ => AnimatedSize(
-                        duration: const Duration(milliseconds: 250),
-                        curve: Curves.easeOutCubic,
-                        child: _CurrenciesList(items: state.filteredItems),
-                      ),
+                      duration: const Duration(milliseconds: 250),
+                      curve: Curves.easeOutCubic,
+                      child: _CurrenciesList(items: state.filteredItems),
+                    ),
                   },
                 );
 
                 return RefreshIndicator(
                   onRefresh: () async {
                     context.read<CurrenciesBloc>().add(
-                          const CurrenciesRetryPressed(),
-                        );
-                    await Future<void>.delayed(const Duration(milliseconds: 250));
+                      const CurrenciesRetryPressed(),
+                    );
+                    await Future<void>.delayed(
+                      const Duration(milliseconds: 250),
+                    );
                   },
                   child: content,
                 );

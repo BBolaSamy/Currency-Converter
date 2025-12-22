@@ -98,6 +98,8 @@ class RatesDao extends DatabaseAccessor<AppDatabase> with _$RatesDaoMixin {
   /// Deletes historical rows strictly older than [cutoffDate] (YYYY-MM-DD).
   /// Since dates are stored as ISO strings, lexicographic ordering matches time ordering.
   Future<int> deleteHistoricalOlderThan({required String cutoffDate}) {
-    return (delete(historicalRates)..where((t) => t.date.isSmallerThanValue(cutoffDate))).go();
+    return (delete(
+      historicalRates,
+    )..where((t) => t.date.isSmallerThanValue(cutoffDate))).go();
   }
 }
