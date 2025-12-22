@@ -24,7 +24,10 @@ class CurrencyPickerSheet extends StatefulWidget {
       context: context,
       isScrollControlled: true,
       showDragHandle: true,
-      builder: (_) => CurrencyPickerSheet(title: title, onSelected: onSelected),
+      builder: (_) => FractionallySizedBox(
+        heightFactor: 0.9,
+        child: CurrencyPickerSheet(title: title, onSelected: onSelected),
+      ),
     );
   }
 
