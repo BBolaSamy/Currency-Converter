@@ -31,7 +31,9 @@ class RatesRemoteDataSourceImpl implements RatesRemoteDataSource {
   }
 
   @override
-  Future<ApiLayerLatestResponse> fetchHistoricalOnDate({required String date}) async {
+  Future<ApiLayerLatestResponse> fetchHistoricalOnDate({
+    required String date,
+  }) async {
     final res = await _dio.get<dynamic>(date);
     final err = ApiLayerApiError.tryParse(res.data);
     if (err != null) throw err;

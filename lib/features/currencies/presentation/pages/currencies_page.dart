@@ -103,10 +103,10 @@ class _CurrenciesView extends StatelessWidget {
                       message: state.errorMessage,
                     ),
                     _ => AnimatedSize(
-                        duration: const Duration(milliseconds: 250),
-                        curve: Curves.easeOutCubic,
-                        child: _CurrenciesList(items: state.filteredItems),
-                      ),
+                      duration: const Duration(milliseconds: 250),
+                      curve: Curves.easeOutCubic,
+                      child: _CurrenciesList(items: state.filteredItems),
+                    ),
                   },
                 );
               },

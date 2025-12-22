@@ -51,7 +51,9 @@ class _HistoricalView extends StatelessWidget {
         builder: (context, state) {
           return RefreshIndicator(
             onRefresh: () async {
-              context.read<HistoricalBloc>().add(const HistoricalRefreshPressed());
+              context.read<HistoricalBloc>().add(
+                const HistoricalRefreshPressed(),
+              );
               await Future<void>.delayed(const Duration(milliseconds: 250));
             },
             child: ListView(
@@ -78,9 +80,9 @@ class _HistoricalView extends StatelessWidget {
                         ),
                         const SizedBox(width: 12),
                         IconButton.filledTonal(
-                          onPressed: () => context
-                              .read<HistoricalBloc>()
-                              .add(const HistoricalSwapPressed()),
+                          onPressed: () => context.read<HistoricalBloc>().add(
+                            const HistoricalSwapPressed(),
+                          ),
                           icon: const Icon(Icons.swap_horiz),
                         ),
                         const SizedBox(width: 12),
@@ -106,19 +108,24 @@ class _HistoricalView extends StatelessWidget {
                   duration: const Duration(milliseconds: 250),
                   child: switch (state.status) {
                     HistoricalStatus.loading => const Padding(
-                        padding: EdgeInsets.only(top: 48),
-                        child: Center(child: CircularProgressIndicator()),
-                      ),
-                    HistoricalStatus.error => _ErrorState(message: state.errorMessage),
+                      padding: EdgeInsets.only(top: 48),
+                      child: Center(child: CircularProgressIndicator()),
+                    ),
+                    HistoricalStatus.error => _ErrorState(
+                      message: state.errorMessage,
+                    ),
                     HistoricalStatus.content => Column(
-                        key: const ValueKey('content'),
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          _Summary(points: state.points),
-                          const SizedBox(height: 12),
-                          SizedBox(height: 280, child: _Chart(points: state.points)),
-                        ],
-                      ),
+                      key: const ValueKey('content'),
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        _Summary(points: state.points),
+                        const SizedBox(height: 12),
+                        SizedBox(
+                          height: 280,
+                          child: _Chart(points: state.points),
+                        ),
+                      ],
+                    ),
                   },
                 ),
               ],
@@ -145,7 +152,9 @@ class _Summary extends StatelessWidget {
 
     String fmt(double v) {
       final s = v.toStringAsFixed(6);
-      return s.replaceFirst(RegExp(r'0+$'), '').replaceFirst(RegExp(r'\.$'), '');
+      return s
+          .replaceFirst(RegExp(r'0+$'), '')
+          .replaceFirst(RegExp(r'\.$'), '');
     }
 
     return Card(
@@ -178,9 +187,9 @@ class _Metric extends StatelessWidget {
         const SizedBox(height: 4),
         Text(
           value,
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w800,
-              ),
+          style: Theme.of(
+            context,
+          ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
         ),
       ],
     );

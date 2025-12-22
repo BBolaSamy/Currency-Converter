@@ -5,7 +5,7 @@ import 'package:flutter/services.dart';
 /// - Allows intermediate states like `""`, `"."`, `"12."` while typing.
 class DecimalTextInputFormatter extends TextInputFormatter {
   DecimalTextInputFormatter({required this.decimalRange})
-      : assert(decimalRange >= 0);
+    : assert(decimalRange >= 0);
 
   final int decimalRange;
 
@@ -37,5 +37,3 @@ class DecimalTextInputFormatter extends TextInputFormatter {
     return newValue;
   }
 }
-
-

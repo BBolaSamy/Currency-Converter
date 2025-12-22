@@ -1,7 +1,5 @@
 class ApiLayerSymbolsResponse {
-  const ApiLayerSymbolsResponse({
-    required this.symbols,
-  });
+  const ApiLayerSymbolsResponse({required this.symbols});
 
   final Map<String, String> symbols; // code -> name
 
@@ -22,5 +20,3 @@ class ApiLayerSymbolsResponse {
     return ApiLayerSymbolsResponse(symbols: out);
   }
 }
-
-

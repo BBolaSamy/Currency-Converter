@@ -65,13 +65,12 @@ class RatesDao extends DatabaseAccessor<AppDatabase> with _$RatesDaoMixin {
     required String to,
     required String date,
   }) {
-    return (select(historicalRates)
-          ..where(
-            (t) =>
-                t.fromCode.equals(from) &
-                t.toCode.equals(to) &
-                t.date.equals(date),
-          ))
+    return (select(historicalRates)..where(
+          (t) =>
+              t.fromCode.equals(from) &
+              t.toCode.equals(to) &
+              t.date.equals(date),
+        ))
         .getSingleOrNull();
   }
 

@@ -45,7 +45,8 @@ class RatesRepositoryImpl implements RatesRepository {
 
       final cached = await _local.getLatest(from: f, to: t);
       final fetchedAt = cached?.fetchedAtUtc;
-      final stale = fetchedAt == null ||
+      final stale =
+          fetchedAt == null ||
           _stalePolicy.isStale(fetchedAtUtc: fetchedAt, maxAge: _maxAge);
 
       final status = await _connectivity.getCurrentStatus();
@@ -127,7 +128,10 @@ class RatesRepositoryImpl implements RatesRepository {
       final endStr = _fmtDate(end);
 
       final cachedRows = await _local.getHistorical(from: f, to: t);
-      final lastFetchedAt = await _local.getHistoricalFetchedAtUtc(from: f, to: t);
+      final lastFetchedAt = await _local.getHistoricalFetchedAtUtc(
+        from: f,
+        to: t,
+      );
       final stale =
           lastFetchedAt == null ||
           _stalePolicy.isStale(fetchedAtUtc: lastFetchedAt, maxAge: _maxAge);
@@ -136,7 +140,11 @@ class RatesRepositoryImpl implements RatesRepository {
       final canFetch = status == ConnectivityStatus.online;
 
       final cachedPoints = cachedRows
-          .where((r) => r.date.compareTo(startStr) >= 0 && r.date.compareTo(endStr) <= 0)
+          .where(
+            (r) =>
+                r.date.compareTo(startStr) >= 0 &&
+                r.date.compareTo(endStr) <= 0,
+          )
           .map((r) => RatePoint(date: r.date, rate: r.rate))
           .toList(growable: false);
 
@@ -165,7 +173,11 @@ class RatesRepositoryImpl implements RatesRepository {
         );
         final refreshed = await _local.getHistorical(from: f, to: t);
         final points = refreshed
-            .where((r) => r.date.compareTo(startStr) >= 0 && r.date.compareTo(endStr) <= 0)
+            .where(
+              (r) =>
+                  r.date.compareTo(startStr) >= 0 &&
+                  r.date.compareTo(endStr) <= 0,
+            )
             .map((r) => RatePoint(date: r.date, rate: r.rate))
             .toList(growable: false);
         if (points.isEmpty) return const FailureResult(CacheFailure());
@@ -186,7 +198,11 @@ class RatesRepositoryImpl implements RatesRepository {
       );
       final refreshed = await _local.getHistorical(from: f, to: t);
       final points = refreshed
-          .where((r) => r.date.compareTo(startStr) >= 0 && r.date.compareTo(endStr) <= 0)
+          .where(
+            (r) =>
+                r.date.compareTo(startStr) >= 0 &&
+                r.date.compareTo(endStr) <= 0,
+          )
           .map((r) => RatePoint(date: r.date, rate: r.rate))
           .toList(growable: false);
       if (points.isEmpty) return const FailureResult(CacheFailure());
@@ -228,9 +244,11 @@ class RatesRepositoryImpl implements RatesRepository {
     final t = to.toUpperCase();
     final rng = Random();
 
-    for (var d = DateTime.utc(start.year, start.month, start.day);
-        !d.isAfter(end);
-        d = d.add(const Duration(days: 1))) {
+    for (
+      var d = DateTime.utc(start.year, start.month, start.day);
+      !d.isAfter(end);
+      d = d.add(const Duration(days: 1))
+    ) {
       final dateStr = _fmtDate(d);
       if (!force) {
         final existing = await _local.getHistoricalByDate(
@@ -293,7 +311,9 @@ class RatesRepositoryImpl implements RatesRepository {
         final status = e.response?.statusCode;
         if (status == 429 && attempt < maxAttempts) {
           final jitter = rng.nextInt(250);
-          await Future<void>.delayed(Duration(milliseconds: backoffMs + jitter));
+          await Future<void>.delayed(
+            Duration(milliseconds: backoffMs + jitter),
+          );
           backoffMs *= 2;
           attempt++;
           continue;
@@ -336,8 +356,16 @@ class RatesRepositoryImpl implements RatesRepository {
 
     final rate = f == t ? 1.0 : (baseTo(t) / baseTo(f));
     final fetchedAtUtc = res.timestamp != null
-        ? DateTime.fromMillisecondsSinceEpoch(res.timestamp! * 1000, isUtc: true)
+        ? DateTime.fromMillisecondsSinceEpoch(
+            res.timestamp! * 1000,
+            isUtc: true,
+          )
         : DateTime.now().toUtc();
-    return LatestRateQuote(from: f, to: t, rate: rate, fetchedAtUtc: fetchedAtUtc);
+    return LatestRateQuote(
+      from: f,
+      to: t,
+      rate: rate,
+      fetchedAtUtc: fetchedAtUtc,
+    );
   }
 }

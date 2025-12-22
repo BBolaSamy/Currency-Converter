@@ -153,17 +153,21 @@ class _ConverterViewState extends State<_ConverterView> {
                             (ConverterBloc b) => b.state.amountErrorText,
                           ),
                           helperText:
-                              context.select((ConverterBloc b) => b.state.amountErrorText) ==
-                                      null
-                                  ? ' '
-                                  : null,
+                              context.select(
+                                    (ConverterBloc b) =>
+                                        b.state.amountErrorText,
+                                  ) ==
+                                  null
+                              ? ' '
+                              : null,
                         ),
                         controller: _controller,
                         onChanged: (v) => context.read<ConverterBloc>().add(
                           ConverterAmountChanged(v),
                         ),
                         onSubmitted: (_) => FocusScope.of(context).unfocus(),
-                        onEditingComplete: () => FocusScope.of(context).unfocus(),
+                        onEditingComplete: () =>
+                            FocusScope.of(context).unfocus(),
                       ),
                     ),
                   ],
@@ -270,9 +274,9 @@ class _ResultCard extends StatelessWidget {
               const SizedBox(height: 8),
               Text(
                 '${amountFmt.format(conversion.convertedAmount)} ${conversion.quote.to}',
-                style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                      fontWeight: FontWeight.w800,
-                    ),
+                style: Theme.of(
+                  context,
+                ).textTheme.displaySmall?.copyWith(fontWeight: FontWeight.w800),
               ),
               const SizedBox(height: 12),
               Text(

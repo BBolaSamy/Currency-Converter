@@ -58,5 +58,3 @@ const Map<String, String> kCurrencyNames = {
   'LAK': 'Lao Kip',
   'KHR': 'Cambodian Riel',
 };
-
-

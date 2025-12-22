@@ -10,7 +10,8 @@ class ApiLayerApiError implements Exception {
   final String? info;
 
   @override
-  String toString() => 'ApiLayerApiError(code: $code, type: $type, info: $info)';
+  String toString() =>
+      'ApiLayerApiError(code: $code, type: $type, info: $info)';
 
   static ApiLayerApiError? tryParse(dynamic data) {
     if (data is! Map) return null;
@@ -30,5 +31,3 @@ class ApiLayerApiError implements Exception {
     );
   }
 }
-
-
