@@ -124,19 +124,25 @@ The app uses **Clean Architecture** + **BLoC** because:
 
 ### Data integrity (constraints)
 
-Drift tables enforce uniqueness using primary keys:
+Drift tables enforce uniqueness using primary keys (these are already implemented in the project):
 
 - **Currencies**: `code` is the primary key (unique currency code)
 - **Favorites**: `currencyCode` is the primary key
 - **LatestRates**: `(fromCode, toCode)` is the composite primary key
 - **HistoricalRates**: `(fromCode, toCode, date)` is the composite primary key (pair+day unique)
 
+Additional integrity/performance hardening:
+
+- **Foreign keys**: enabled at DB open time via `PRAGMA foreign_keys = ON;` (see `lib/core/persistence/app_database.dart`)
+- **Index for retention cleanup**: `idx_historical_rates_date` on `historical_rates(date)` (see migrations below)
+
 ### Migrations strategy
 
 Database migrations are handled by Drift using:
 
 - `schemaVersion` + `MigrationStrategy` in `lib/core/persistence/app_database.dart`
-- Upgrade steps are explicit (e.g. creating indices without data loss)
+- **Current schema version**: `2`
+- **v2 upgrade**: adds `idx_historical_rates_date` (no data loss)
 
 ### Cache invalidation (retention)
 
