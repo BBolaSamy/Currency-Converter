@@ -148,14 +148,6 @@ Database migrations are handled by Drift using:
 
 To keep local storage bounded, the app **purges historical rates older than 30 days** during refresh.
 
-### Optional encryption (if required)
-
-If you require at-rest encryption (e.g., compliance), you can switch the SQLite backend to **SQLCipher**
-while keeping the same table schema and repository/data-source design. Typical approaches:
-
-- Use a SQLCipher-enabled SQLite implementation for Flutter (SQLCipher build), or a Drift-compatible SQLCipher package.
-- Store the encryption key securely (platform keystore/keychain).
-
 ## Historical data
 
 The app fetches last 7 days by requesting the **date endpoint** (`/{YYYY-MM-DD}`) for each day (cached in Drift).  
