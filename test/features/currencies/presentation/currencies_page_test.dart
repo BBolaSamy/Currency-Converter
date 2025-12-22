@@ -23,7 +23,7 @@ void main() {
     );
 
     await pumpMaterialApp(tester, CurrenciesPage(bloc: bloc));
-    expect(find.byType(TextField), findsOneWidget);
+    expect(find.byType(SearchBar), findsOneWidget);
     expect(find.text('Currencies'), findsOneWidget);
   });
 }

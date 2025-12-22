@@ -29,85 +29,122 @@ class CurrenciesPage extends StatelessWidget {
   }
 }
 
-class _CurrenciesView extends StatelessWidget {
+class _CurrenciesView extends StatefulWidget {
   const _CurrenciesView();
+
+  @override
+  State<_CurrenciesView> createState() => _CurrenciesViewState();
+}
+
+class _CurrenciesViewState extends State<_CurrenciesView> {
+  late final TextEditingController _searchController;
+
+  @override
+  void initState() {
+    super.initState();
+    _searchController = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Currencies'),
-        actions: [
-          BlocBuilder<CurrenciesBloc, CurrenciesState>(
-            buildWhen: (p, n) => p.showFavoritesOnly != n.showFavoritesOnly,
-            builder: (context, state) {
-              return IconButton(
-                tooltip: state.showFavoritesOnly
-                    ? 'Show all'
-                    : 'Show favorites',
-                onPressed: () => context.read<CurrenciesBloc>().add(
-                  CurrenciesFavoritesFilterChanged(!state.showFavoritesOnly),
-                ),
-                icon: Icon(
-                  state.showFavoritesOnly ? Icons.star : Icons.star_border,
-                ),
-              );
-            },
-          ),
-        ],
-      ),
+      appBar: AppBar(title: const Text('Currencies')),
       body: Column(
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-            child: TextField(
-              decoration: const InputDecoration(
-                prefixIcon: Icon(Icons.search),
-                hintText: 'Search by code or name',
-              ),
-              onChanged: (v) => context.read<CurrenciesBloc>().add(
-                CurrenciesSearchChanged(v),
-              ),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: BlocBuilder<CurrenciesBloc, CurrenciesState>(
-                buildWhen: (p, n) => p.showFavoritesOnly != n.showFavoritesOnly,
-                builder: (context, state) {
-                  return FilterChip(
-                    selected: state.showFavoritesOnly,
-                    label: const Text('Favorites'),
-                    avatar: Icon(
-                      state.showFavoritesOnly ? Icons.star : Icons.star_border,
-                      size: 18,
-                    ),
-                    onSelected: (selected) => context
-                        .read<CurrenciesBloc>()
-                        .add(CurrenciesFavoritesFilterChanged(selected)),
+            child: BlocBuilder<CurrenciesBloc, CurrenciesState>(
+              buildWhen: (p, n) =>
+                  p.query != n.query ||
+                  p.showFavoritesOnly != n.showFavoritesOnly,
+              builder: (context, state) {
+                if (_searchController.text != state.query) {
+                  _searchController.text = state.query;
+                  _searchController.selection = TextSelection.collapsed(
+                    offset: _searchController.text.length,
                   );
-                },
-              ),
+                }
+
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    SearchBar(
+                      controller: _searchController,
+                      leading: const Icon(Icons.search),
+                      hintText: 'Search by code or name',
+                      trailing: [
+                        if (state.query.trim().isNotEmpty)
+                          IconButton(
+                            tooltip: 'Clear search',
+                            onPressed: () {
+                              _searchController.clear();
+                              context.read<CurrenciesBloc>().add(
+                                    const CurrenciesSearchChanged(''),
+                                  );
+                            },
+                            icon: const Icon(Icons.close),
+                          ),
+                      ],
+                      onChanged: (v) => context.read<CurrenciesBloc>().add(
+                            CurrenciesSearchChanged(v),
+                          ),
+                    ),
+                    const SizedBox(height: 12),
+                    SegmentedButton<bool>(
+                      segments: const [
+                        ButtonSegment(
+                          value: false,
+                          label: Text('All'),
+                          icon: Icon(Icons.list_alt),
+                        ),
+                        ButtonSegment(
+                          value: true,
+                          label: Text('Favorites'),
+                          icon: Icon(Icons.star),
+                        ),
+                      ],
+                      selected: {state.showFavoritesOnly},
+                      onSelectionChanged: (s) => context
+                          .read<CurrenciesBloc>()
+                          .add(CurrenciesFavoritesFilterChanged(s.first)),
+                    ),
+                  ],
+                );
+              },
             ),
           ),
           Expanded(
             child: BlocBuilder<CurrenciesBloc, CurrenciesState>(
               builder: (context, state) {
-                return AnimatedSwitcher(
+                final content = AnimatedSwitcher(
                   duration: const Duration(milliseconds: 250),
                   child: switch (state.status) {
                     CurrenciesStatus.loading => const _CurrenciesSkeleton(),
                     CurrenciesStatus.error => _ErrorState(
-                      message: state.errorMessage,
-                    ),
+                        message: state.errorMessage,
+                      ),
                     _ => AnimatedSize(
-                      duration: const Duration(milliseconds: 250),
-                      curve: Curves.easeOutCubic,
-                      child: _CurrenciesList(items: state.filteredItems),
-                    ),
+                        duration: const Duration(milliseconds: 250),
+                        curve: Curves.easeOutCubic,
+                        child: _CurrenciesList(items: state.filteredItems),
+                      ),
                   },
+                );
+
+                return RefreshIndicator(
+                  onRefresh: () async {
+                    context.read<CurrenciesBloc>().add(
+                          const CurrenciesRetryPressed(),
+                        );
+                    await Future<void>.delayed(const Duration(milliseconds: 250));
+                  },
+                  child: content,
                 );
               },
             ),
@@ -134,6 +171,7 @@ class _CurrenciesList extends StatelessWidget {
     }
 
     return ListView.separated(
+      physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
       itemCount: items.length,
       separatorBuilder: (_, __) => const SizedBox(height: 8),
