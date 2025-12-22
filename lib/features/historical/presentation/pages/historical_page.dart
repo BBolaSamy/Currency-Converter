@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'dart:math' as math;
 
 import '../../../../app/di/injection.dart';
 import '../../presentation/bloc/historical_bloc.dart';
@@ -232,6 +233,27 @@ class _Chart extends StatelessWidget {
 
   final List<RatePoint> points;
 
+  double _niceStep(double raw) {
+    if (raw <= 0) return 1;
+    final exp = math.pow(10, (math.log(raw) / math.ln10).floor()).toDouble();
+    final f = raw / exp;
+    if (f <= 1) return 1 * exp;
+    if (f <= 2) return 2 * exp;
+    if (f <= 5) return 5 * exp;
+    return 10 * exp;
+  }
+
+  int _decimalsForStep(double step) {
+    if (step <= 0) return 2;
+    final d = (-math.log(step) / math.ln10).ceil();
+    return d.clamp(0, 6);
+  }
+
+  String _fmt(double v, {required int decimals}) {
+    final s = v.toStringAsFixed(decimals);
+    return s.replaceFirst(RegExp(r'0+$'), '').replaceFirst(RegExp(r'\.$'), '');
+  }
+
   @override
   Widget build(BuildContext context) {
     if (points.isEmpty) {
@@ -243,17 +265,25 @@ class _Chart extends StatelessWidget {
       spots.add(FlSpot(i.toDouble(), points[i].rate));
     }
 
-    final minY = points.map((e) => e.rate).reduce((a, b) => a < b ? a : b);
-    final maxY = points.map((e) => e.rate).reduce((a, b) => a > b ? a : b);
-    final padding = (maxY - minY) == 0 ? 0.01 : (maxY - minY) * 0.1;
+    final rawMin = points.map((e) => e.rate).reduce((a, b) => a < b ? a : b);
+    final rawMax = points.map((e) => e.rate).reduce((a, b) => a > b ? a : b);
+    final range = (rawMax - rawMin).abs();
+
+    // Choose ~4-5 ticks with "nice" rounded numbers, so the axis looks like
+    // ~1.23–1.33 instead of 1.236–1.324.
+    final step = _niceStep(range == 0 ? 0.01 : (range / 4));
+    final pad = step; // one tick of padding on each side
+    final minY = ((rawMin - pad) / step).floorToDouble() * step;
+    final maxY = ((rawMax + pad) / step).ceilToDouble() * step;
+    final decimals = _decimalsForStep(step);
 
     return Card(
       child: Padding(
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
         child: LineChart(
           LineChartData(
-            minY: minY - padding,
-            maxY: maxY + padding,
+            minY: minY,
+            maxY: maxY,
             gridData: const FlGridData(show: false),
             borderData: FlBorderData(show: false),
             titlesData: FlTitlesData(
@@ -263,8 +293,16 @@ class _Chart extends StatelessWidget {
               rightTitles: const AxisTitles(
                 sideTitles: SideTitles(showTitles: false),
               ),
-              leftTitles: const AxisTitles(
-                sideTitles: SideTitles(showTitles: true),
+              leftTitles: AxisTitles(
+                sideTitles: SideTitles(
+                  showTitles: true,
+                  interval: step,
+                  reservedSize: 44,
+                  getTitlesWidget: (value, meta) => Text(
+                    _fmt(value, decimals: decimals),
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                ),
               ),
               bottomTitles: AxisTitles(
                 sideTitles: SideTitles(
