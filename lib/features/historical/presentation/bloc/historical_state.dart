@@ -6,7 +6,7 @@ class HistoricalState {
   const HistoricalState({
     this.status = HistoricalStatus.loading,
     this.from = 'USD',
-    this.to = 'EUR',
+    this.to = 'KWD',
     this.points = const [],
     this.errorMessage,
   });

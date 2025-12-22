@@ -14,6 +14,7 @@ class CurrencyConverterApp extends StatelessWidget {
     return MultiBlocProvider(
       providers: [BlocProvider(create: (_) => getIt<ConnectivityCubit>())],
       child: MaterialApp(
+        debugShowCheckedModeBanner: false,
         title: 'Currency Converter',
         theme: AppTheme.light(),
         home: const AppShell(),

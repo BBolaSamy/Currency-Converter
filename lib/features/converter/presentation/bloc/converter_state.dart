@@ -6,7 +6,7 @@ class ConverterState {
   const ConverterState({
     this.status = ConverterStatus.idle,
     this.from = 'USD',
-    this.to = 'EUR',
+    this.to = 'KWD',
     this.amountText = '1',
     this.amountErrorText,
     this.swapCount = 0,

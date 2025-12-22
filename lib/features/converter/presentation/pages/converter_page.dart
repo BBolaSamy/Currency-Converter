@@ -140,6 +140,8 @@ class _ConverterViewState extends State<_ConverterView> {
                           decimal: true,
                           signed: false,
                         ),
+                        textInputAction: TextInputAction.done,
+                        onTapOutside: (_) => FocusScope.of(context).unfocus(),
                         inputFormatters: <TextInputFormatter>[
                           FilteringTextInputFormatter.deny(RegExp(r'\s')),
                           DecimalTextInputFormatter(decimalRange: 6),
@@ -160,6 +162,8 @@ class _ConverterViewState extends State<_ConverterView> {
                         onChanged: (v) => context.read<ConverterBloc>().add(
                           ConverterAmountChanged(v),
                         ),
+                        onSubmitted: (_) => FocusScope.of(context).unfocus(),
+                        onEditingComplete: () => FocusScope.of(context).unfocus(),
                       ),
                     ),
                   ],
@@ -242,7 +246,9 @@ class _ResultCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final fmt = NumberFormat('#,##0.########');
+    // Approx formatting: keep results readable (e.g. 1.236 -> 1.24, 11.11 -> 11.11).
+    final amountFmt = NumberFormat('#,##0.00');
+    final rateFmt = NumberFormat('#,##0.00');
     final dateFmt = DateFormat('MMM d, HH:mm');
     final key = ValueKey(
       '${conversion.quote.from}_${conversion.quote.to}_${conversion.quote.fetchedAtUtc.toIso8601String()}',
@@ -258,19 +264,19 @@ class _ResultCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                '${fmt.format(conversion.amount)} ${conversion.quote.from} =',
+                '${amountFmt.format(conversion.amount)} ${conversion.quote.from} =',
                 style: Theme.of(context).textTheme.titleMedium,
               ),
               const SizedBox(height: 8),
               Text(
-                '${fmt.format(conversion.convertedAmount)} ${conversion.quote.to}',
+                '${amountFmt.format(conversion.convertedAmount)} ${conversion.quote.to}',
                 style: Theme.of(context).textTheme.displaySmall?.copyWith(
                       fontWeight: FontWeight.w800,
                     ),
               ),
               const SizedBox(height: 12),
               Text(
-                'Rate: 1 ${conversion.quote.from} = ${fmt.format(conversion.quote.rate)} ${conversion.quote.to}',
+                'Rate: 1 ${conversion.quote.from} = ${rateFmt.format(conversion.quote.rate)} ${conversion.quote.to}',
               ),
               const SizedBox(height: 4),
               Text(
